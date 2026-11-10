@@ -127,4 +127,28 @@
   html {
     @apply font-sans;
   }
+
+  /* Pointer cursor on everything clickable (Tailwind v4 resets buttons to the default arrow) */
+  a[href],
+  button,
+  select,
+  summary,
+  label[for],
+  [role="button"],
+  [role="option"],
+  [role="menuitem"],
+  input[type="date"],
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+  }
+
+  /* Disabled controls show they can't be clicked */
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
