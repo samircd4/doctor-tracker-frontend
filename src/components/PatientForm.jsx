@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import FilterSelect from "@/components/FilterSelect";
+import DateInput from "@/components/DateInput";
 
 // Turn a patient from the API into form values (dates as YYYY-MM-DD for <input type="date">)
 function toFormValues(patient) {
@@ -156,7 +157,7 @@ export default function PatientForm({ open, onOpenChange, doctorId, patient }) {
           </Field>
 
           <Field id="admittedAt" label="Admitted on" error={errors.admittedAt}>
-            <Input id="admittedAt" name="admittedAt" type="date" value={form.admittedAt} onChange={update} />
+            <DateInput id="admittedAt" name="admittedAt" value={form.admittedAt} onChange={update} />
           </Field>
 
           <Field id="phone" label="Phone" error={errors.phone}>
