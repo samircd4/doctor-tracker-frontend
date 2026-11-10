@@ -5,11 +5,11 @@
  * Top bar: mobile menu button, current user and logout.
  */
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LogOut, Menu } from "lucide-react";
 import { api } from "@/lib/api";
-import { initials } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Logo, NavLinks } from "@/components/Sidebar";
@@ -55,8 +55,9 @@ export default function AppHeader() {
       <div className="ml-auto flex items-center gap-3">
         {user && (
           <div className="hidden items-center gap-2 sm:flex">
-            <span className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-              {initials(user.name)}
+            {/* Admin avatar: the app logo on a light circle */}
+            <span className="flex size-9 items-center justify-center rounded-full bg-primary/5 ring-1 ring-primary/15">
+              <Image src="/images/logo-mark.png" alt="" width={26} height={26} />
             </span>
             <div className="leading-tight">
               <p className="text-sm font-medium">{user.name}</p>
