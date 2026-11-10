@@ -139,7 +139,12 @@
   [role="menuitem"],
   input[type="date"],
   input[type="checkbox"],
-  input[type="radio"],
+  input[type="radio"] {
+    cursor: pointer;
+  }
+
+  /* Calendar icon inside date inputs. Kept as its own rule: inside the list above,
+     the CSS build dropped this browser-specific selector. */
   input[type="date"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
   }

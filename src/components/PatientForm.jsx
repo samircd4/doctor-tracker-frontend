@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { selectClass } from "@/components/FilterSelect";
+import FilterSelect from "@/components/FilterSelect";
 
 // Turn a patient from the API into form values (dates as YYYY-MM-DD for <input type="date">)
 function toFormValues(patient) {
@@ -64,6 +64,7 @@ export default function PatientForm({ open, onOpenChange, doctorId, patient }) {
   }
 
   const update = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const setField = (name, value) => setForm({ ...form, [name]: value }); // for dropdowns
 
   // Doctor list for the "Assigned doctor" select (edit mode only, cached)
   const { data: options } = useQuery({
@@ -131,17 +132,27 @@ export default function PatientForm({ open, onOpenChange, doctorId, patient }) {
           </Field>
 
           <Field id="gender" label="Gender *" error={errors.gender}>
-            <select id="gender" name="gender" required value={form.gender} onChange={update} className={selectClass}>
-              <option value="">Select gender</option>
-              {GENDERS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-            </select>
+            <FilterSelect
+              id="gender"
+              value={form.gender}
+              onChange={(v) => setField("gender", v)}
+              options={GENDERS}
+              placeholder="Select gender"
+              allowEmpty={false}
+              aria-invalid={Boolean(errors.gender)}
+            />
           </Field>
 
           <Field id="condition" label="Condition *" error={errors.condition}>
-            <select id="condition" name="condition" required value={form.condition} onChange={update} className={selectClass}>
-              <option value="">Select condition</option>
-              {CONDITIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
+            <FilterSelect
+              id="condition"
+              value={form.condition}
+              onChange={(v) => setField("condition", v)}
+              options={CONDITIONS}
+              placeholder="Select condition"
+              allowEmpty={false}
+              aria-invalid={Boolean(errors.condition)}
+            />
           </Field>
 
           <Field id="admittedAt" label="Admitted on" error={errors.admittedAt}>
@@ -160,11 +171,14 @@ export default function PatientForm({ open, onOpenChange, doctorId, patient }) {
           {isEdit && (
             <div className="sm:col-span-2">
               <Field id="doctor" label="Assigned doctor" error={errors.doctor}>
-                <select id="doctor" name="doctor" value={form.doctor} onChange={update} className={selectClass}>
-                  {options?.doctors.map((d) => (
-                    <option key={d._id} value={d._id}>{d.name} · {d.specialization}</option>
-                  ))}
-                </select>
+                <FilterSelect
+                  id="doctor"
+                  value={form.doctor}
+                  onChange={(v) => setField("doctor", v)}
+                  options={options?.doctors.map((d) => ({ value: d._id, label: `${d.name} · ${d.specialization}` })) ?? []}
+                  placeholder="Select doctor"
+                  allowEmpty={false}
+                />
               </Field>
             </div>
           )}
