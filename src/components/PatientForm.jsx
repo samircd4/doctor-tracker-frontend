@@ -2,9 +2,10 @@
 
 /**
  * components/PatientForm.jsx
- * One dialog for both:
- *  - Add:  pass `doctorId`  → POST /api/doctors/:doctorId/patients
- *  - Edit: pass `patient`   → PUT  /api/patients/:id (can also move the patient to another doctor)
+ * One dialog for:
+ *  - Add for a known doctor: pass `doctorId` → POST /api/doctors/:doctorId/patients
+ *  - Add from the Patients page: no `doctorId` → the user picks the doctor in the form
+ *  - Edit: pass `patient` → PUT /api/patients/:id (can also move the patient to another doctor)
  *
  * The component stays mounted (Base UI dialogs must not mount already-open,
  * or the opening click closes them). The form resets whenever `patient` changes.
@@ -52,6 +53,8 @@ function Field({ id, label, error, children }) {
 export default function PatientForm({ open, onOpenChange, doctorId, patient }) {
   const queryClient = useQueryClient();
   const isEdit = Boolean(patient);
+  // Show the doctor dropdown when editing, or when adding without a fixed doctor
+  const chooseDoctor = isEdit || !doctorId;
   const [form, setForm] = useState(() => toFormValues(patient));
   const [errors, setErrors] = useState({});
 
@@ -64,14 +67,18 @@ export default function PatientForm({ open, onOpenChange, doctorId, patient }) {
     setErrors({});
   }
 
-  const update = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-  const setField = (name, value) => setForm({ ...form, [name]: value }); // for dropdowns
+  // Changing a field also clears that field's error message
+  const setField = (name, value) => {
+    setForm({ ...form, [name]: value });
+    if (errors[name]) setErrors({ ...errors, [name]: undefined });
+  };
+  const update = (e) => setField(e.target.name, e.target.value); // for text inputs
 
-  // Doctor list for the "Assigned doctor" select (edit mode only, cached)
+  // Doctor list for the doctor dropdown (only loaded when the dropdown is shown, cached)
   const { data: options } = useQuery({
     queryKey: ["doctor-options"],
     queryFn: () => api("/doctors/options").then((res) => res.data),
-    enabled: isEdit,
+    enabled: chooseDoctor,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -79,7 +86,8 @@ export default function PatientForm({ open, onOpenChange, doctorId, patient }) {
     mutationFn: (body) =>
       isEdit
         ? api(`/patients/${patient._id}`, { method: "PUT", body })
-        : api(`/doctors/${doctorId}/patients`, { method: "POST", body: { ...body, doctor: undefined } }),
+        : // New patient goes under the fixed doctor, or the one picked in the form
+          api(`/doctors/${doctorId || body.doctor}/patients`, { method: "POST", body: { ...body, doctor: undefined } }),
     onSuccess: () => {
       // Refresh every list and number that shows patients
       queryClient.invalidateQueries({ queryKey: ["patients"] });
@@ -103,6 +111,11 @@ export default function PatientForm({ open, onOpenChange, doctorId, patient }) {
 
   function handleSubmit(e) {
     e.preventDefault();
+    // The doctor is part of the URL, so it must be chosen before we can send anything
+    if (!isEdit && !doctorId && !form.doctor) {
+      setErrors({ doctor: "Select a doctor" });
+      return;
+    }
     setErrors({});
     const body = { ...form };
     // Only send the admitted date if the user changed it, so editing other
@@ -122,6 +135,23 @@ export default function PatientForm({ open, onOpenChange, doctorId, patient }) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+          {/* Doctor: required when adding from the Patients page, changeable when editing */}
+          {chooseDoctor && (
+            <div className="sm:col-span-2">
+              <Field id="doctor" label={isEdit ? "Assigned doctor" : "Doctor *"} error={errors.doctor}>
+                <FilterSelect
+                  id="doctor"
+                  value={form.doctor}
+                  onChange={(v) => setField("doctor", v)}
+                  options={options?.doctors.map((d) => ({ value: d._id, label: `${d.name} · ${d.specialization}` })) ?? []}
+                  placeholder="Select doctor"
+                  allowEmpty={false}
+                  aria-invalid={Boolean(errors.doctor)}
+                />
+              </Field>
+            </div>
+          )}
+
           <div className="sm:col-span-2">
             <Field id="name" label="Full name *" error={errors.name}>
               <Input id="name" name="name" required autoFocus value={form.name} onChange={update} aria-invalid={Boolean(errors.name)} />
@@ -167,22 +197,6 @@ export default function PatientForm({ open, onOpenChange, doctorId, patient }) {
           <Field id="email" label="Email" error={errors.email}>
             <Input id="email" name="email" type="email" value={form.email} onChange={update} aria-invalid={Boolean(errors.email)} />
           </Field>
-
-          {/* Only when editing: move the patient to a different doctor */}
-          {isEdit && (
-            <div className="sm:col-span-2">
-              <Field id="doctor" label="Assigned doctor" error={errors.doctor}>
-                <FilterSelect
-                  id="doctor"
-                  value={form.doctor}
-                  onChange={(v) => setField("doctor", v)}
-                  options={options?.doctors.map((d) => ({ value: d._id, label: `${d.name} · ${d.specialization}` })) ?? []}
-                  placeholder="Select doctor"
-                  allowEmpty={false}
-                />
-              </Field>
-            </div>
-          )}
 
           <div className="flex justify-end gap-2 sm:col-span-2">
             <Button type="button" variant="outline" onClick={close}>

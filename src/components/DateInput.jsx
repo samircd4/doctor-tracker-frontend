@@ -34,14 +34,17 @@ export default function DateInput({ className, inputClassName, ...props }) {
 
   return (
     <div className={cn("relative w-full min-w-0", className)}>
-      <Input ref={inputRef} type="date" onClick={openCalendar} className={cn("w-full pr-9", inputClassName)} {...props} />
-      {/* Our calendar icon (tabIndex -1: keyboard users already have the input itself) */}
+      <Input ref={inputRef} type="date" onClick={openCalendar} className={cn("w-full", inputClassName)} {...props} />
+      {/* Our calendar icon. It sits exactly over the spot where browsers draw their own
+          icon and has a solid background, so the built-in icon is always covered
+          (some browsers ignore the CSS that hides it). tabIndex -1: keyboard users
+          already have the input itself. */}
       <button
         type="button"
         tabIndex={-1}
         aria-label="Open calendar"
         onClick={openCalendar}
-        className="absolute top-1/2 right-1 flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="absolute top-1/2 right-0.5 flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
       >
         <CalendarDays className="size-4" />
       </button>

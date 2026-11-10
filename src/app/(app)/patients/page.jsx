@@ -3,11 +3,12 @@
 /**
  * app/(app)/patients/page.jsx
  * All patients: search (name/email/phone), filters (condition, doctor, gender,
- * admitted date range), pagination, edit and delete.
+ * admitted date range), pagination, add (with doctor picker), edit and delete.
  */
 import { useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Plus } from "lucide-react";
 import { api } from "@/lib/api";
 import { CONDITIONS, GENDERS, PAGE_SIZE } from "@/lib/constants";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -30,7 +31,7 @@ export default function PatientsPage() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState(NO_FILTERS);
   const [page, setPage] = useState(1);
-  const [editing, setEditing] = useState(null); // patient being edited (null = dialog closed)
+  const [form, setForm] = useState(null); // null = closed, {} = add, { patient } = edit
   const [deleting, setDeleting] = useState(null); // patient waiting for delete confirmation
 
   const debouncedSearch = useDebounce(search);
@@ -83,7 +84,16 @@ export default function PatientsPage() {
 
   return (
     <>
-      <PageHeader title="Patients" description="Search, filter and manage every patient." />
+      <PageHeader
+        title="Patients"
+        description="Search, filter and manage every patient."
+        action={
+          // Same position and style as "Add doctor" on the Doctors page
+          <Button onClick={() => setForm({})} className="h-9">
+            <Plus /> Add patient
+          </Button>
+        }
+      />
 
       {/* Filters */}
       <Card className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[2fr_1fr_1fr_1fr]">
@@ -131,20 +141,21 @@ export default function PatientsPage() {
         ) : patients.length === 0 ? (
           <EmptyState
             title={hasFilters ? "No patients match your filters" : "No patients yet"}
-            description={hasFilters ? "Try a different search or clear the filters." : "Add patients from a doctor's page."}
+            description={hasFilters ? "Try a different search or clear the filters." : "Use “Add patient” to create the first one."}
             action={hasFilters && <Button variant="outline" size="sm" onClick={clearFilters}>Clear filters</Button>}
           />
         ) : (
-          <PatientTable patients={patients} onEdit={setEditing} onDelete={setDeleting} />
+          <PatientTable patients={patients} onEdit={(patient) => setForm({ patient })} onDelete={setDeleting} />
         )}
       </Card>
 
       <Pagination meta={data?.meta} onPageChange={setPage} />
 
+      {/* Add (no patient → the form asks for the doctor) or edit (with patient) */}
       <PatientForm
-        open={Boolean(editing)}
-        onOpenChange={(open) => !open && setEditing(null)}
-        patient={editing}
+        open={Boolean(form)}
+        onOpenChange={(open) => !open && setForm(null)}
+        patient={form?.patient}
       />
 
       <ConfirmDialog
