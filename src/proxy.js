@@ -30,6 +30,7 @@ export function proxy(request) {
 }
 
 // Run on pages only — skip API calls, Next.js internals and static files
+// (images in /public must load on the login page, before the user is logged in)
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg$).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico)$).*)"],
 };
