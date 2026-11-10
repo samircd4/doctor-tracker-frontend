@@ -14,7 +14,8 @@ export default function DateFilter({ from, to, onChange, label = "Date" }) {
         max={to || undefined} // can't pick a start after the end
         onChange={(e) => onChange({ from: e.target.value, to })}
         aria-label={`${label} from`}
-        className="h-9 min-w-0 flex-1"
+        className="flex-1"
+        inputClassName="h-9"
       />
       <span className="text-sm text-muted-foreground">to</span>
       <DateInput
@@ -22,7 +23,8 @@ export default function DateFilter({ from, to, onChange, label = "Date" }) {
         min={from || undefined}
         onChange={(e) => onChange({ from, to: e.target.value })}
         aria-label={`${label} to`}
-        className="h-9 min-w-0 flex-1"
+        className="flex-1"
+        inputClassName="h-9"
       />
     </div>
   );

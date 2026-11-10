@@ -143,10 +143,10 @@
     cursor: pointer;
   }
 
-  /* Calendar icon inside date inputs. Kept as its own rule: inside the list above,
-     the CSS build dropped this browser-specific selector. */
+  /* Hide the browser's own calendar icon (Chrome/Edge/Safari). DateInput.jsx
+     shows its own icon button instead, so it looks and works the same everywhere. */
   input[type="date"]::-webkit-calendar-picker-indicator {
-    cursor: pointer;
+    display: none;
   }
 
   /* Disabled controls show they can't be clicked */
