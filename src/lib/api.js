@@ -36,7 +36,9 @@ export async function api(path, { method = "GET", body, params } = {}) {
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
     }
-    const error = new Error(json?.error?.message || "Request failed");
+    // No JSON error body means our API never answered (e.g. it is not running)
+    const fallback = res.status >= 500 ? "Cannot reach the server. Please try again shortly." : "Request failed";
+    const error = new Error(json?.error?.message || fallback);
     error.status = res.status;
     error.details = json?.error?.details || [];
     throw error;
