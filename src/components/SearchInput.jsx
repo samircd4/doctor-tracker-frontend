@@ -18,7 +18,8 @@ export default function SearchInput({ value, onChange, placeholder = "Search..."
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="h-9 pr-8 pl-9"
+        // hide the browser's own clear (×) button; we show our own below
+        className="h-9 pr-8 pl-9 [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <button

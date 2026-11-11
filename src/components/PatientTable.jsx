@@ -42,10 +42,10 @@ export default function PatientTable({ patients, showDoctor = true, onEdit, onDe
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="pl-4">Patient</TableHead>
-            <TableHead>Age / Gender</TableHead>
+            <TableHead className="hidden lg:table-cell">Age / Gender</TableHead>
             <TableHead>Condition</TableHead>
             {showDoctor && <TableHead>Doctor</TableHead>}
-            <TableHead>Admitted</TableHead>
+            <TableHead className="hidden lg:table-cell">Admitted</TableHead>
             <TableHead className="pr-4 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -56,7 +56,7 @@ export default function PatientTable({ patients, showDoctor = true, onEdit, onDe
                 <p className="font-medium">{patient.name}</p>
                 <p className="text-xs text-muted-foreground">{patient.email || patient.phone || "—"}</p>
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="hidden text-muted-foreground lg:table-cell">
                 {patient.age} · {capitalize(patient.gender)}
               </TableCell>
               <TableCell>
@@ -74,7 +74,7 @@ export default function PatientTable({ patients, showDoctor = true, onEdit, onDe
                   <p className="text-xs text-muted-foreground">{patient.doctor?.specialization}</p>
                 </TableCell>
               )}
-              <TableCell className="text-muted-foreground">{formatDate(patient.admittedAt)}</TableCell>
+              <TableCell className="hidden text-muted-foreground lg:table-cell">{formatDate(patient.admittedAt)}</TableCell>
               <TableCell className="pr-4">
                 <RowActions patient={patient} onEdit={onEdit} onDelete={onDelete} />
               </TableCell>

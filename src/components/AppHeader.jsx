@@ -65,7 +65,7 @@ export default function AppHeader() {
             </div>
           </div>
         )}
-        <Button variant="outline" size="sm" onClick={handleLogout}>
+        <Button variant="outline" size="sm" onClick={handleLogout} aria-label="Log out">
           <LogOut />
           <span className="hidden sm:inline">Log out</span>
         </Button>

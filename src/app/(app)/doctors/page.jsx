@@ -134,9 +134,9 @@ export default function DoctorsPage() {
                   <TableHead className="pl-4">Doctor</TableHead>
                   <TableHead>Specialization</TableHead>
                   <TableHead>Hospital</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead className="text-right">Patients</TableHead>
-                  <TableHead className="pr-4">Added</TableHead>
+                  <TableHead className="hidden lg:table-cell">Phone</TableHead>
+                  <TableHead className="pr-4 text-right lg:pr-2">Patients</TableHead>
+                  <TableHead className="hidden pr-4 lg:table-cell">Added</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -164,9 +164,9 @@ export default function DoctorsPage() {
                       <Badge variant="secondary">{doctor.specialization}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{doctor.hospital}</TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">{doctor.phone}</TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">{doctor.patientCount}</TableCell>
-                    <TableCell className="pr-4 text-muted-foreground">{formatDate(doctor.createdAt)}</TableCell>
+                    <TableCell className="hidden tabular-nums text-muted-foreground lg:table-cell">{doctor.phone}</TableCell>
+                    <TableCell className="pr-4 text-right font-medium tabular-nums lg:pr-2">{doctor.patientCount}</TableCell>
+                    <TableCell className="hidden pr-4 text-muted-foreground lg:table-cell">{formatDate(doctor.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

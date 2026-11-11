@@ -34,7 +34,7 @@ export function ErrorState({ message, onRetry }) {
   return (
     <div className="flex flex-col items-center gap-3 px-4 py-12 text-center">
       <AlertCircle className="size-8 text-destructive" />
-      <p className="font-medium">Something went wrong</p>
+      <p className="font-medium">Couldn&apos;t load the data</p>
       <p className="text-sm text-muted-foreground">{message}</p>
       {onRetry && (
         <Button variant="outline" size="sm" onClick={onRetry}>
