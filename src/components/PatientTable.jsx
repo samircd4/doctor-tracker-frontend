@@ -1,40 +1,30 @@
 /**
  * components/PatientTable.jsx
  * Patient rows used on both the Patients page and a doctor's detail page.
- * Desktop: table. Mobile: cards. Edit/Delete buttons on every row.
+ * Desktop: table. Mobile: cards. Edit/Delete buttons on every row (only when
+ * onEdit/onDelete are passed, i.e. for admins).
  *
  * showDoctor: show the "Doctor" column (not needed on a doctor's own page)
  */
 import Link from "next/link";
-import { Pencil, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/format";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ConditionBadge from "@/components/ConditionBadge";
-
-// Edit + Delete icon buttons (aria-labels name the patient for screen readers)
-function RowActions({ patient, onEdit, onDelete }) {
-  return (
-    <div className="flex justify-end gap-1">
-      <Button variant="ghost" size="icon-sm" aria-label={`Edit ${patient.name}`} onClick={() => onEdit(patient)}>
-        <Pencil />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label={`Delete ${patient.name}`}
-        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-        onClick={() => onDelete(patient)}
-      >
-        <Trash2 />
-      </Button>
-    </div>
-  );
-}
+import RowActions from "@/components/RowActions";
 
 const capitalize = (text = "") => text.charAt(0).toUpperCase() + text.slice(1);
 
 export default function PatientTable({ patients, showDoctor = true, onEdit, onDelete }) {
+  // No handlers (e.g. view-only staff) → no Actions column
+  const hasActions = Boolean(onEdit || onDelete);
+  const actionsFor = (patient) => (
+    <RowActions
+      label={patient.name}
+      onEdit={onEdit && (() => onEdit(patient))}
+      onDelete={onDelete && (() => onDelete(patient))}
+    />
+  );
+
   return (
     <>
       {/* Desktop / tablet: table */}
@@ -46,7 +36,7 @@ export default function PatientTable({ patients, showDoctor = true, onEdit, onDe
             <TableHead>Condition</TableHead>
             {showDoctor && <TableHead>Doctor</TableHead>}
             <TableHead className="hidden lg:table-cell">Admitted</TableHead>
-            <TableHead className="pr-4 text-right">Actions</TableHead>
+            {hasActions && <TableHead className="pr-4 text-right">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -75,9 +65,7 @@ export default function PatientTable({ patients, showDoctor = true, onEdit, onDe
                 </TableCell>
               )}
               <TableCell className="hidden text-muted-foreground lg:table-cell">{formatDate(patient.admittedAt)}</TableCell>
-              <TableCell className="pr-4">
-                <RowActions patient={patient} onEdit={onEdit} onDelete={onDelete} />
-              </TableCell>
+              {hasActions && <TableCell className="pr-4">{actionsFor(patient)}</TableCell>}
             </TableRow>
           ))}
         </TableBody>
@@ -99,7 +87,7 @@ export default function PatientTable({ patients, showDoctor = true, onEdit, onDe
                 <p className="truncate text-xs text-muted-foreground">{patient.doctor.name}</p>
               )}
             </div>
-            <RowActions patient={patient} onEdit={onEdit} onDelete={onDelete} />
+            {hasActions && actionsFor(patient)}
           </li>
         ))}
       </ul>

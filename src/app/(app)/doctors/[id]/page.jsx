@@ -3,18 +3,20 @@
 /**
  * app/(app)/doctors/[id]/page.jsx
  * One doctor: profile card + that doctor's patients
- * (search, condition + admitted-date filters, pagination, add / edit / remove).
+ * (search, condition + admitted-date filters, pagination).
+ * Admins can also edit/delete the doctor and add/edit/remove patients.
  */
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Building2, CalendarDays, Mail, Phone, Plus, Users } from "lucide-react";
+import { ArrowLeft, Building2, CalendarDays, Mail, Pencil, Phone, Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { CONDITIONS, PAGE_SIZE } from "@/lib/constants";
 import { formatDate, initials } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -26,6 +28,8 @@ import Pagination from "@/components/Pagination";
 import PatientTable from "@/components/PatientTable";
 import PatientForm from "@/components/PatientForm";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import DoctorForm from "@/components/DoctorForm";
+import DeleteDoctorDialog from "@/components/DeleteDoctorDialog";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/ListStates";
 
 const NO_FILTERS = { condition: "", from: "", to: "" };
@@ -42,7 +46,11 @@ function InfoItem({ icon: Icon, children }) {
 
 export default function DoctorDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
   const queryClient = useQueryClient();
+  const { isAdmin } = useCurrentUser();
+  const [editingDoctor, setEditingDoctor] = useState(false);
+  const [deletingDoctor, setDeletingDoctor] = useState(false);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState(NO_FILTERS);
   const [page, setPage] = useState(1);
@@ -72,6 +80,14 @@ export default function DoctorDetailPage() {
     queryFn: () => api(`/doctors/${id}`).then((res) => res.data),
   });
   const doctor = doctorQuery.data;
+
+  // Suggestions for the edit-doctor form (admins only, cached)
+  const { data: options } = useQuery({
+    queryKey: ["doctor-options"],
+    queryFn: () => api("/doctors/options").then((res) => res.data),
+    enabled: isAdmin,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // This doctor's patients (key starts with "patients" so patient mutations refresh it)
   const params = { q: debouncedSearch, ...filters, page, limit: PAGE_SIZE };
@@ -146,9 +162,24 @@ export default function DoctorDetailPage() {
               <Badge variant="secondary" className="mt-1">{doctor.specialization}</Badge>
             </div>
           </div>
-          <Button onClick={() => setForm({})} className="h-9">
-            <Plus /> Add patient
-          </Button>
+          {/* Admin actions (the API enforces the admin role too) */}
+          {isAdmin && (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setEditingDoctor(true)} className="h-9">
+                <Pencil /> Edit
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setDeletingDoctor(true)}
+                className="h-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 /> Delete
+              </Button>
+              <Button onClick={() => setForm({})} className="h-9">
+                <Plus /> Add patient
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-3 border-t pt-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -198,7 +229,7 @@ export default function DoctorDetailPage() {
               hasFilters ? (
                 <Button variant="outline" size="sm" onClick={clearFilters}>Clear filters</Button>
               ) : (
-                <Button size="sm" onClick={() => setForm({})}><Plus /> Add patient</Button>
+                isAdmin && <Button size="sm" onClick={() => setForm({})}><Plus /> Add patient</Button>
               )
             }
           />
@@ -206,8 +237,8 @@ export default function DoctorDetailPage() {
           <PatientTable
             patients={patients}
             showDoctor={false}
-            onEdit={(patient) => setForm({ patient })}
-            onDelete={setRemoving}
+            onEdit={isAdmin ? (patient) => setForm({ patient }) : undefined}
+            onDelete={isAdmin ? setRemoving : undefined}
           />
         )}
       </Card>
@@ -230,6 +261,22 @@ export default function DoctorDetailPage() {
         confirmLabel="Remove"
         onConfirm={() => removePatient.mutate(removing)}
         loading={removePatient.isPending}
+      />
+
+      {/* Admin: edit this doctor */}
+      <DoctorForm
+        open={editingDoctor}
+        onOpenChange={setEditingDoctor}
+        doctor={doctor}
+        specializations={options?.specializations}
+        hospitals={options?.hospitals}
+      />
+
+      {/* Admin: delete this doctor (and their patients), then go back to the list */}
+      <DeleteDoctorDialog
+        doctor={deletingDoctor ? doctor : null}
+        onOpenChange={setDeletingDoctor}
+        onDeleted={() => router.replace("/doctors")}
       />
     </>
   );

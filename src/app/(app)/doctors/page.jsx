@@ -2,8 +2,8 @@
 
 /**
  * app/(app)/doctors/page.jsx
- * Doctors list: search, filters (specialization, hospital, date added), pagination,
- * and an "Add doctor" dialog. Clicking a doctor opens its detail page.
+ * Doctors list: search, filters (specialization, hospital, date added), pagination.
+ * Admins can add, edit and delete doctors. Clicking a doctor opens its detail page.
  */
 import { useState } from "react";
 import Link from "next/link";
@@ -14,6 +14,7 @@ import { api } from "@/lib/api";
 import { PAGE_SIZE } from "@/lib/constants";
 import { formatDate, initials } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -24,6 +25,8 @@ import FilterSelect from "@/components/FilterSelect";
 import DateFilter from "@/components/DateFilter";
 import Pagination from "@/components/Pagination";
 import DoctorForm from "@/components/DoctorForm";
+import DeleteDoctorDialog from "@/components/DeleteDoctorDialog";
+import RowActions from "@/components/RowActions";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/ListStates";
 
 const NO_FILTERS = { specialization: "", hospital: "", from: "", to: "" };
@@ -33,7 +36,9 @@ export default function DoctorsPage() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState(NO_FILTERS);
   const [page, setPage] = useState(1);
-  const [formOpen, setFormOpen] = useState(false);
+  const [form, setForm] = useState(null); // null = closed, {} = add, { doctor } = edit
+  const [deleting, setDeleting] = useState(null); // doctor waiting for delete confirmation
+  const { isAdmin } = useCurrentUser();
 
   // Wait until the user stops typing before searching
   const debouncedSearch = useDebounce(search);
@@ -79,9 +84,12 @@ export default function DoctorsPage() {
         title="Doctors"
         description="Manage doctors and view their patients."
         action={
-          <Button onClick={() => setFormOpen(true)} className="h-9">
-            <Plus /> Add doctor
-          </Button>
+          // Admins only (the API enforces this too)
+          isAdmin && (
+            <Button onClick={() => setForm({})} className="h-9">
+              <Plus /> Add doctor
+            </Button>
+          )
         }
       />
 
@@ -137,6 +145,7 @@ export default function DoctorsPage() {
                   <TableHead className="hidden lg:table-cell">Phone</TableHead>
                   <TableHead className="pr-4 text-right lg:pr-2">Patients</TableHead>
                   <TableHead className="hidden pr-4 lg:table-cell">Added</TableHead>
+                  {isAdmin && <TableHead className="pr-4 text-right">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -167,6 +176,11 @@ export default function DoctorsPage() {
                     <TableCell className="hidden tabular-nums text-muted-foreground lg:table-cell">{doctor.phone}</TableCell>
                     <TableCell className="pr-4 text-right font-medium tabular-nums lg:pr-2">{doctor.patientCount}</TableCell>
                     <TableCell className="hidden pr-4 text-muted-foreground lg:table-cell">{formatDate(doctor.createdAt)}</TableCell>
+                    {isAdmin && (
+                      <TableCell className="pr-4">
+                        <RowActions label={doctor.name} onEdit={() => setForm({ doctor })} onDelete={() => setDeleting(doctor)} />
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -175,8 +189,8 @@ export default function DoctorsPage() {
             {/* Mobile: cards */}
             <ul className="divide-y md:hidden">
               {doctors.map((doctor) => (
-                <li key={doctor._id}>
-                  <Link href={`/doctors/${doctor._id}`} className="flex gap-3 p-4 hover:bg-muted/50">
+                <li key={doctor._id} className="flex items-start">
+                  <Link href={`/doctors/${doctor._id}`} className="flex min-w-0 flex-1 gap-3 p-4 hover:bg-muted/50">
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                       {initials(doctor.name)}
                     </span>
@@ -194,6 +208,11 @@ export default function DoctorsPage() {
                       </div>
                     </div>
                   </Link>
+                  {isAdmin && (
+                    <div className="py-4 pr-3">
+                      <RowActions label={doctor.name} onEdit={() => setForm({ doctor })} onDelete={() => setDeleting(doctor)} />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -203,12 +222,16 @@ export default function DoctorsPage() {
 
       <Pagination meta={data?.meta} onPageChange={setPage} />
 
+      {/* Add (no doctor) or edit (with doctor) */}
       <DoctorForm
-        open={formOpen}
-        onOpenChange={setFormOpen}
+        open={Boolean(form)}
+        onOpenChange={(open) => !open && setForm(null)}
+        doctor={form?.doctor}
         specializations={options?.specializations}
         hospitals={options?.hospitals}
       />
+
+      <DeleteDoctorDialog doctor={deleting} onOpenChange={(open) => !open && setDeleting(null)} />
     </>
   );
 }

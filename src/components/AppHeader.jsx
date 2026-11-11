@@ -7,7 +7,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { LogOut, Menu } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -19,12 +20,8 @@ export default function AppHeader() {
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Logged-in user (cached for 5 minutes, shared with any other component)
-  const { data: user } = useQuery({
-    queryKey: ["me"],
-    queryFn: () => api("/auth/me").then((res) => res.data),
-    staleTime: 5 * 60 * 1000,
-  });
+  // Logged-in user (cached, shared with every other component)
+  const { user, isAdmin } = useCurrentUser();
 
   async function handleLogout() {
     await api("/auth/logout", { method: "POST" });
@@ -60,7 +57,15 @@ export default function AppHeader() {
               <Image src="/images/logo-mark.png" alt="" width={26} height={26} />
             </span>
             <div className="leading-tight">
-              <p className="text-sm font-medium">{user.name}</p>
+              <p className="flex items-center gap-1.5 text-sm font-medium">
+                {user.name}
+                {/* Role badge: staff accounts can view but not change data */}
+                <span
+                  className={`rounded px-1.5 py-px text-[10px] font-semibold uppercase ${isAdmin ? "bg-primary/10 text-primary" : "bg-amber-100 text-amber-700"}`}
+                >
+                  {isAdmin ? "Admin" : "View only"}
+                </span>
+              </p>
               <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
           </div>

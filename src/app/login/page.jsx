@@ -27,8 +27,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// Demo account created by the seed script (shown so reviewers can sign in quickly)
-const DEMO = { email: "admin@test.com", password: "Admin@123" };
+// Demo accounts created by the seed script (shown so reviewers can sign in quickly
+// and see role-based authorization: admin can change data, staff can only view)
+const DEMO_ACCOUNTS = [
+  { role: "Admin", access: "full access", email: "admin@test.com", password: "Admin@123" },
+  { role: "Staff", access: "view only", email: "staff@test.com", password: "Staff@123" },
+];
 
 const FEATURES = [
   { icon: Stethoscope, title: "Doctor management", text: "Add doctors and see each doctor's patient list." },
@@ -205,18 +209,31 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Demo account box: fills the form with one click */}
-          <div className="mt-8 rounded-xl border bg-muted/40 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0 text-sm">
-                <p className="font-medium">Demo account</p>
-                <p className="text-muted-foreground">{DEMO.email}</p>
-                <p className="text-muted-foreground">{DEMO.password}</p>
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={() => setForm(DEMO)}>
-                Use demo
-              </Button>
-            </div>
+          {/* Demo accounts: each "Use" button fills the form with one click */}
+          <div className="mt-8 rounded-xl border bg-muted/40 p-4 text-sm">
+            <p className="mb-3 font-medium">Demo accounts</p>
+            <ul className="space-y-3">
+              {DEMO_ACCOUNTS.map((account) => (
+                <li key={account.email} className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium">
+                      {account.role} <span className="font-normal text-muted-foreground">· {account.access}</span>
+                    </p>
+                    <p className="text-muted-foreground">{account.email}</p>
+                    <p className="text-muted-foreground">{account.password}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setForm({ email: account.email, password: account.password })}
+                    aria-label={`Use the ${account.role} demo account`}
+                  >
+                    Use
+                  </Button>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 

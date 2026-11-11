@@ -6,8 +6,8 @@ A secure admin portal for managing doctors, their patients, and clinic analytics
 |---|---|
 | **Frontend repo** | this repo (Next.js) |
 | **Backend repo** | [doctor-tracker-backend](https://github.com/samircd4/doctor-tracker-backend) (Express + MongoDB) |
-| **Live demo** | _add link after deployment_ |
-| **Demo login** | `admin@test.com` / `Admin@123` |
+| **Live demo** | **https://doctor-tracker.drpythonsolutions.com** |
+| **Demo logins** | Admin (full access): `admin@test.com` / `Admin@123`<br>Staff (view only): `staff@test.com` / `Staff@123` |
 
 ---
 
@@ -21,8 +21,8 @@ A secure admin portal for managing doctors, their patients, and clinic analytics
 It is built with **Next.js** on the frontend and a separate **Express + MongoDB** REST API. Every list is backed by indexed database queries, so it stays fast as the data grows.
 
 ### Features
-- 🔐 **Secure login.** JWT in an httpOnly cookie, protected pages and API, and a session check on every request.
-- 👩‍⚕️ **Doctors.** Create; search; filter by specialization, hospital and date added; paginate; open a doctor to manage their patients.
+- 🔐 **Secure login and roles.** JWT in an httpOnly cookie, protected pages and API, and a session check on every request. Role-based authorization: **admins** can create, edit and delete; **staff** have view-only access.
+- 👩‍⚕️ **Doctors.** Create, edit and delete; search; filter by specialization, hospital and date added; paginate; open a doctor to manage their patients.
 - 🧑‍🤝‍🧑 **Patients.** List all patients; search; filter by condition, doctor, gender and admitted date; add (with a doctor picker), edit (including moving to another doctor) and delete.
 - 📊 **Dashboard.** 4 KPIs and 3 charts (admissions per month, top 10 doctors by patients, condition breakdown), all from one aggregated API call.
 - 📱 **Responsive and accessible.** Tables become cards on phones. Loading, empty and error states. Keyboard friendly, with labels on every control.
@@ -35,6 +35,8 @@ It is built with **Next.js** on the frontend and a separate **Express + MongoDB*
 | Server state | TanStack Query 5 |
 | Charts | Recharts 3 |
 | Backend (separate repo) | Node.js, Express 5, MongoDB with Mongoose 9, Zod 4 |
+
+> **Note on the spec’s §6 (Tech Stack):** the PDF lists both “full-stack inside Next.js” and “Next.js as a separate client + Express as a separate standalone server”. We followed the second, updated version: two separate apps that talk over REST.
 
 ---
 
@@ -67,7 +69,7 @@ npm install
 cp .env.example .env.local
 npm run dev                 # app on http://localhost:3000
 ```
-Open http://localhost:3000 and sign in with **`admin@test.com` / `Admin@123`** (or click **Use demo** on the login page).
+Open http://localhost:3000 and sign in with **`admin@test.com` / `Admin@123`** (full access) or **`staff@test.com` / `Staff@123`** (view only). The login page has a **Use** button for each.
 
 ### Environment variables (`.env.example`)
 | Variable | Repo | Default | Purpose |
@@ -99,7 +101,8 @@ flowchart LR
 ```
 
 - **One origin for the browser.** The browser only talks to the Next.js app. `next.config.mjs` rewrites every `/api/*` call to the Express server, so the login cookie works without any CORS or cross-site setup.
-- **Authentication.** `POST /api/auth/login` checks the password (bcrypt) and sets a signed JWT in an **httpOnly, SameSite=Lax** cookie, which JavaScript can't read. `src/proxy.js` (Next 16's middleware) redirects visitors without the cookie to `/login`. The API's `requireAuth` middleware verifies the token on every request, so it is the real security check.
+- **Authentication.** `POST /api/auth/login` checks the password (bcrypt) and sets a signed JWT (with the user's role) in an **httpOnly, SameSite=Lax** cookie, which JavaScript can't read. `src/proxy.js` (Next 16's middleware) redirects visitors without the cookie to `/login`. The API's `requireAuth` middleware verifies the token on every request, so it is the real security check.
+- **Authorization.** Every create, edit and delete route also passes `requireRole("admin")`, so staff accounts get **403** from the API. The UI hides those buttons for staff and shows a *View only* badge. Hiding buttons is only for a cleaner UI; the API check is what protects the data.
 - **Data flow.** Pages fetch through one helper (`src/lib/api.js`) and **TanStack Query**, which caches each filter combination and refetches after changes. A 401 sends the user back to the login page.
 - **Backend.** Routes → Zod validation → controllers → MongoDB. Lists use indexed `find` + `countDocuments`, and the dashboard uses aggregation pipelines (see the backend README).
 
@@ -162,6 +165,35 @@ src/
 Each query reads only the documents it returns. There are no collection scans.
 
 **Trade-off.** Skip/limit pagination is simple and fine for thousands of rows. For millions, we'd switch to cursor (keyset) pagination, and to MongoDB Atlas Search for fuzzy, typo-tolerant search.
+
+---
+
+## Scalability & performance
+
+**Backend**
+- **Stateless API.** Login state lives in a signed JWT, not in server memory, so more API instances can run behind a load balancer (e.g. PM2 cluster mode or several containers) with no session store.
+- **Index-backed queries.** Every search/filter/sort path has a compound index (see Decision 2), so a query reads only the rows it returns, however large the collection grows.
+- **Bounded work per request.** Page size is capped at 100. List and count run in parallel. Patient counts and dashboard numbers are single aggregations, never one query per row.
+- **Next steps at larger scale:**
+  - cursor (keyset) pagination instead of skip/limit;
+  - MongoDB Atlas Search for fuzzy search;
+  - a short cache (e.g. Redis) for `/api/stats`;
+  - a MongoDB replica set, so the doctor delete (doctor + patients) can run in a transaction.
+
+**Frontend: avoiding unnecessary work and re-renders**
+- **TanStack Query.**
+  - Cached, de-duplicated requests per filter combination.
+  - `keepPreviousData` keeps the table on screen while the next page loads.
+  - Targeted `invalidateQueries` refreshes only the affected lists after a change.
+- **Debounced search.** `useDebounce` waits 300 ms, so typing doesn't trigger a request and re-render on every keystroke.
+- **Code-splitting.** The chart library (Recharts) loads only on the dashboard, through `next/dynamic`.
+- **Small components.** Dialogs stay mounted once per page (not one per row), and state lives close to where it's used.
+
+**Deployment** (live demo)
+- One Ubuntu VPS: **Nginx** (HTTPS via Let's Encrypt) in front of the Next.js app.
+- Next.js proxies `/api/*` to the Express API on a private port.
+- MongoDB runs in Docker, bound to localhost only.
+- **PM2** keeps both apps running and restarts them after a reboot.
 
 ---
 

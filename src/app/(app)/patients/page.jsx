@@ -14,6 +14,7 @@ import { CONDITIONS, GENDERS, PAGE_SIZE } from "@/lib/constants";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import PageHeader from "@/components/PageHeader";
 import SearchInput from "@/components/SearchInput";
 import FilterSelect from "@/components/FilterSelect";
@@ -28,6 +29,7 @@ const NO_FILTERS = { condition: "", doctor: "", gender: "", from: "", to: "" };
 
 export default function PatientsPage() {
   const queryClient = useQueryClient();
+  const { isAdmin } = useCurrentUser();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState(NO_FILTERS);
   const [page, setPage] = useState(1);
@@ -88,10 +90,12 @@ export default function PatientsPage() {
         title="Patients"
         description="Search, filter and manage every patient."
         action={
-          // Same position and style as "Add doctor" on the Doctors page
-          <Button onClick={() => setForm({})} className="h-9">
-            <Plus /> Add patient
-          </Button>
+          // Admins only. Same position and style as "Add doctor" on the Doctors page
+          isAdmin && (
+            <Button onClick={() => setForm({})} className="h-9">
+              <Plus /> Add patient
+            </Button>
+          )
         }
       />
 
@@ -145,7 +149,12 @@ export default function PatientsPage() {
             action={hasFilters && <Button variant="outline" size="sm" onClick={clearFilters}>Clear filters</Button>}
           />
         ) : (
-          <PatientTable patients={patients} onEdit={(patient) => setForm({ patient })} onDelete={setDeleting} />
+          <PatientTable
+            patients={patients}
+            // Edit/Delete only for admins (the API enforces this too)
+            onEdit={isAdmin ? (patient) => setForm({ patient }) : undefined}
+            onDelete={isAdmin ? setDeleting : undefined}
+          />
         )}
       </Card>
 
