@@ -55,12 +55,16 @@ export function NavLinks({ onNavigate }) {
   );
 }
 
-// Fixed sidebar for large screens (hidden on mobile, where the header menu is used)
+// Sidebar for large screens (hidden on mobile, where the header menu is used).
+// The <aside> stretches to the full page height (white column + border all the
+// way down); only its contents stay pinned to the top while scrolling.
 export default function Sidebar() {
   return (
-    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-6 border-r bg-background p-4 lg:flex">
-      <Logo />
-      <NavLinks />
+    <aside className="hidden w-60 shrink-0 border-r bg-background lg:block">
+      <div className="sticky top-0 flex flex-col gap-6 p-4">
+        <Logo />
+        <NavLinks />
+      </div>
     </aside>
   );
 }
